@@ -43,7 +43,7 @@ def triangle_wave(note = 0,
     for n in range(r):
         tri = tri + [(q - (q/r)*n) - amplitude]
 
-    return fit(tri * round(number_of_periods), round(duration * sample_rate))
+    return edge_fade(fit(tri * round(number_of_periods), round(duration * sample_rate)))
 
 def melody(note = 0,
                 duration = 1,
@@ -67,7 +67,7 @@ def melody(note = 0,
     for n in range(r):
         tri = tri + [(q - (q/r)*n) - amplitude]
 
-    return fit(tri * round(number_of_periods), round(duration * sample_rate))
+    return edge_fade(fit(tri * round(number_of_periods), round(duration * sample_rate)))
 
 
 def bass(note = 0,
@@ -118,7 +118,7 @@ def bass(note = 0,
 
     final = mix(tri1 , mix(tri2,tri3,1,.02) ,1,.2)
 
-    return final
+    return edge_fade(final)
 
 
 def square_wave_f(f, sample_rate=SR, amplitude=0.15):
