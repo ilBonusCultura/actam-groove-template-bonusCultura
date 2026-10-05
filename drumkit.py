@@ -21,6 +21,105 @@ def noise(duration=0.05, amplitude=0.15, sample_rate=SR):
     n = round(duration * sample_rate)
     return [amplitude * (2 * random() - 1) for _ in range(n)]
 
+def triangle_wave(note = 0,
+                duration = 1,
+                amplitude = .25,
+                sample_rate = SR):
+
+    period_duration = 1/(440*2**(note/12))
+    period_samples = period_duration * sample_rate
+    half_period_samples = period_samples/2
+    number_of_periods = duration/period_duration 
+
+    q = amplitude*2
+
+    tri = []
+
+    r = round(period_samples)
+
+    for n in range(r):
+        tri = tri + [(q/r)*n - amplitude]
+
+    for n in range(r):
+        tri = tri + [(q - (q/r)*n) - amplitude]
+
+    return fit(tri * round(number_of_periods), round(duration * sample_rate))
+
+def melody(note = 0,
+                duration = 1,
+                amplitude = .25,
+                sample_rate = SR):
+
+    period_duration = 1/(880*2**(note/12))
+    period_samples = period_duration * sample_rate
+    half_period_samples = period_samples/2
+    number_of_periods = duration/period_duration 
+
+    q = amplitude*2
+
+    tri = []
+
+    r = round(period_samples)
+
+    for n in range(r):
+        tri = tri + [(q/r)*n - amplitude]
+
+    for n in range(r):
+        tri = tri + [(q - (q/r)*n) - amplitude]
+
+    return fit(tri * round(number_of_periods), round(duration * sample_rate))
+
+
+def bass(note = 0,
+                duration = 1,
+                amplitude = .2,
+                sample_rate = SR):
+
+    period_duration = 1/(415.3*2**(note/12))
+    period_samples = period_duration * sample_rate
+    half_period_samples = period_samples/2
+    number_of_periods = duration/period_duration 
+
+    q = amplitude*2
+
+    r = round(period_samples*2)
+    s = round(period_samples)
+    t = round(period_samples/2)
+
+    tri1 = []
+    tri2 = []
+    tri3 = []
+    
+    for n in range(r):
+            tri1 = tri1 + [(q/r)*n - amplitude]
+
+    for n in range(r):
+            tri1 = tri1 + [(q - (q/r)*n) - amplitude]
+
+    tri1 = fit(tri1 * round(number_of_periods), round(duration * sample_rate))
+        
+    for n in range(s):
+            tri2 = tri2 + [(q/r)*n - amplitude]
+
+    for n in range(s):
+            tri2 = tri2 + [(q - (q/r)*n) - amplitude]
+
+    tri2 = fit(tri2 * round(number_of_periods), round(duration * sample_rate))
+
+        
+    for n in range(t):
+            tri3 = tri3 + [(q/r)*n - amplitude]
+
+    for n in range(t):
+            tri3 = tri3 + [(q - (q/r)*n) - amplitude]
+
+    tri3 = fit(tri3 * round(number_of_periods), round(duration * sample_rate))
+    
+
+    final = mix(tri1 , mix(tri2,tri3,1,.02) ,1,.2)
+
+    return final
+
 
 def square_wave_f(f, sample_rate=SR, amplitude=0.15):
     phase = 0.0
@@ -51,7 +150,7 @@ def envelope_exp(duration=0.05, tau=0.012, sample_rate=SR):
     return [exp(-(i / sample_rate) / tau) for i in range(n)]
 
 
-def closed_hat(duration=0.06, tau=0.010, amplitude=0.15, sample_rate=SR):
+def closed_hat(duration=0.2, tau=0.030, amplitude=0.15, sample_rate=SR):
     source = noise(duration, amplitude=amplitude, sample_rate=sample_rate)
     shape = envelope_exp(duration, tau=tau, sample_rate=sample_rate)
     return edge_fade(vca(source, shape), sample_rate=sample_rate)
@@ -62,9 +161,17 @@ def open_hat(duration=0.30, tau=0.070, amplitude=0.15, sample_rate=SR):
     shape = envelope_exp(duration, tau=tau, sample_rate=sample_rate)
     return edge_fade(vca(source, shape), sample_rate=sample_rate)
 
+def maracas(duration=0.10, attack=0.03, tau=0.020, amplitude=0.15, sample_rate=SR):
+    n = round(attack * sample_rate)
+    
+    source = noise(duration, amplitude=amplitude, sample_rate=sample_rate)
+    shape = fit([(i/n) for i in range(n)]+ envelope_exp(duration, tau=tau, sample_rate=sample_rate),len(source))
+    
+    return edge_fade(vca(mix(source,mix(mix(triangle_wave(38,duration=.1,amplitude=.01),triangle_wave(36,duration=.1,amplitude=.01)),triangle_wave(60,duration=.1,amplitude=.02)),1,.8), shape), sample_rate=sample_rate)
+
 
 def kick_raw(
-    duration=0.25, start_hz=180, end_hz=45,
+    duration=0.15, start_hz=260, end_hz=60,
     pitch_tau=0.025, amp_tau=0.060,
     amplitude=0.20, sample_rate=SR,
 ):
@@ -76,8 +183,8 @@ def kick_raw(
 
 
 def kick(
-    duration=0.25, start_hz=180, end_hz=45,
-    pitch_tau=0.025, amp_tau=0.060,
+    duration=0.15, start_hz=260, end_hz=60,
+    pitch_tau=0.025, amp_tau=0.040,
     amplitude=0.20, sample_rate=SR,
 ):
     wave = kick_raw(
@@ -95,15 +202,31 @@ def mix(a, b, ga=1.0, gb=1.0):
 
 
 def snare(
-    duration=0.20, amplitude=0.15, noise_gain=0.5,
+    duration=0.80, amplitude=0.25, noise_gain=0.8,
     sample_rate=SR,
 ):
     pitch = [
-        180 + 120 * value
+        175 + 120 * value
+        for value in envelope_exp(duration, tau=0.010, sample_rate=sample_rate)
+    ]
+    pitch2 = [
+        175*2 + 120 * value
+        for value in envelope_exp(duration, tau=0.010, sample_rate=sample_rate)
+    ]
+    pitch3 = [
+        175*4 + 120 * value
         for value in envelope_exp(duration, tau=0.010, sample_rate=sample_rate)
     ]
     body = vca(
         square_wave_f(pitch, amplitude=amplitude, sample_rate=sample_rate),
+        envelope_exp(duration, tau=0.025, sample_rate=sample_rate),
+    )
+    body2 = vca(
+        square_wave_f(pitch2, amplitude=amplitude, sample_rate=sample_rate),
+        envelope_exp(duration, tau=0.025, sample_rate=sample_rate),
+    )
+    body3 = vca(
+        square_wave_f(pitch3, amplitude=amplitude, sample_rate=sample_rate),
         envelope_exp(duration, tau=0.025, sample_rate=sample_rate),
     )
     wires = vca(
@@ -111,7 +234,7 @@ def snare(
         envelope_exp(duration, tau=0.055, sample_rate=sample_rate),
     )
     return edge_fade(
-        mix(body, wires, ga=1.0, gb=noise_gain),
+        mix(mix(body,mix(body2,body3,1,.25),1,.5), wires, ga=1.0, gb=noise_gain),
         sample_rate=sample_rate,
     )
 
@@ -123,13 +246,19 @@ def fit(wave, n_samples):
 
 def read_pattern(pattern):
     steps = []
-    for symbol in pattern:
-        if symbol == "x":
-            steps.append(1)
-        elif symbol == ".":
-            steps.append(0)
+    index = 0
+    while index < len(pattern):
+        if pattern[index] == "x":
+            steps.append(99)
+        elif pattern[index] == ".":
+            steps.append(98)
+        elif pattern[index] == "-":
+            index += 1
+            steps.append(-int(pattern[index]))
         else:
-            raise ValueError("Use only x for a hit and . for a rest.")
+            steps.append(int(pattern[index]))
+            
+        index += 1
     return steps
 
 
@@ -139,10 +268,12 @@ def render_pattern(pattern, instrument, step_s, sample_rate=SR):
     steps = read_pattern(pattern)
     slots = []
     for hit in steps:
-        if hit == 1:
+        if hit == 99:
             wave = instrument(sample_rate=sample_rate)
-        else:
+        elif hit == 98:
             wave = []
+        else:
+            wave = instrument(note=hit)
         slots.append(fit(wave, n))
     return sum(slots, [])
 
